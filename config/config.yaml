@@ -1,0 +1,36 @@
+system:
+  mode: demo  # demo | production
+  log_level: INFO
+  
+cameras:
+  - id: 1
+    name: "Main Gate"
+    source: "0"  # USB camera index
+    fps: 20
+    
+detection:
+  model: yolov8n
+  confidence: 0.4
+  device: cpu  # cpu | cuda
+  
+tracking:
+  max_lost_frames: 30
+  min_hits: 3
+  
+ocr:
+  enabled: true
+  language: en
+  throttle_frames: 10
+  
+events:
+  entry_y_threshold: 0.6
+  min_dwell_time: 1.0
+  dedup_window: 60
+  
+database:
+  type: sqlite  # sqlite | postgresql
+  path: anpr.db
+  
+api:
+  host: 0.0.0.0
+  port: 8000

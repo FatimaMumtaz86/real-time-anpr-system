@@ -11,9 +11,10 @@ torch==2.1.0
 torchvision==0.16.0
 
 # OCR
-paddlepaddle==2.5.2
+opencv-python
+paddlepaddle==2.6.2
 paddleocr==2.7.0.3
-
+shapely
 # Database
 pyyaml==6.0.1
 

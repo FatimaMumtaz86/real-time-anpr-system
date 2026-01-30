@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANPR Live Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #141936;
+            --bg-card: #1a1f3a;
+            --accent-primary: #00d9ff;
+            --accent-secondary: #7c3aed;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(0, 217, 255, 0.2);
+            --glow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 217, 255, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
+        .dashboard {
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--glow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .logo-text h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-success);
+            border-radius: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-success);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--glow);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, var(--accent-primary), var(--text-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .video-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--glow);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .title-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        .video-container {
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .video-placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .events-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .events-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .events-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .events-list::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 3px;
+        }
+
+        .events-list::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        .event-item {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .event-item:hover {
+            background: var(--bg-primary);
+            transform: translateX(-4px);
+        }
+
+        .event-item.entry {
+            border-left-color: var(--accent-success);
+        }
+
+        .event-item.exit {
+            border-left-color: var(--accent-warning);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-type {
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .event-type.entry {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-success);
+        }
+
+        .event-type.exit {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-warning);
+        }
+
+        .event-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .event-plate {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            letter-spacing: 0.1em;
+        }
+
+        .event-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid var(--bg-secondary);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .camera-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .camera-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .camera-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .camera-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .camera-fps {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-primary);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // API Configuration
+        const API_BASE = 'http://localhost:8000';
+        const WS_BASE = 'ws://localhost:8000';
+
+        function Dashboard() {
+            const [stats, setStats] = useState({
+                total_events: 0,
+                total_entries: 0,
+                total_exits: 0,
+                cameras_online: 0,
+                current_fps: 0,
+                uptime_seconds: 0
+            });
+            const [events, setEvents] = useState([]);
+            const [cameras, setCameras] = useState([]);
+            const [isConnected, setIsConnected] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const wsRef = useRef(null);
+
+            // Fetch initial data
+            useEffect(() => {
+                fetchStats();
+                fetchEvents();
+                fetchCameras();
+                connectWebSocket();
+
+                const statsInterval = setInterval(fetchStats, 2000);
+                const eventsInterval = setInterval(fetchEvents, 5000);
+                const camerasInterval = setInterval(fetchCameras, 3000);
+
+                return () => {
+                    clearInterval(statsInterval);
+                    clearInterval(eventsInterval);
+                    clearInterval(camerasInterval);
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                    }
+                };
+            }, []);
+
+            const fetchStats = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/stats`);
+                    const data = await response.json();
+                    setStats(data);
+                    setLoading(false);
+                } catch (error) {
+                    console.error('Failed to fetch stats:', error);
+                }
+            };
+
+            const fetchEvents = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/events/recent?limit=20`);
+                    const data = await response.json();
+                    setEvents(data);
+                } catch (error) {
+                    console.error('Failed to fetch events:', error);
+                }
+            };
+
+            const fetchCameras = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/cameras`);
+                    const data = await response.json();
+                    setCameras(data);
+                } catch (error) {
+                    console.error('Failed to fetch cameras:', error);
+                }
+            };
+
+            const connectWebSocket = () => {
+                try {
+                    const ws = new WebSocket(`${WS_BASE}/ws/live`);
+                    
+                    ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        setIsConnected(true);
+                    };
+
+                    ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        
+                        if (message.type === 'event') {
+                            // Add new event to the top
+                            setEvents(prev => [message.data, ...prev].slice(0, 20));
+                            fetchStats(); // Refresh stats
+                        } else if (message.type === 'stats') {
+                            setStats(message.data);
+                        }
+                    };
+
+                    ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        setIsConnected(false);
+                    };
+
+                    ws.onclose = () => {
+                        console.log('WebSocket disconnected');
+                        setIsConnected(false);
+                        // Reconnect after 3 seconds
+                        setTimeout(connectWebSocket, 3000);
+                    };
+
+                    wsRef.current = ws;
+                } catch (error) {
+                    console.error('WebSocket connection failed:', error);
+                }
+            };
+
+            const formatTime = (timestamp) => {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString();
+            };
+
+            const formatUptime = (seconds) => {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                return `${hours}h ${minutes}m`;
+            };
+
+            if (loading) {
+                return (
+                    <div className="dashboard">
+                        <div className="loading">
+                            <div className="spinner"></div>
+                            <p>Connecting to ANPR System...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="dashboard">
+                    <div className="header">
+                        <div className="logo">
+                            <div className="logo-icon">A</div>
+                            <div className="logo-text">
+                                <h1>ANPR Live</h1>
+                                <p>Real-Time Monitoring</p>
+                            </div>
+                        </div>
+                        <div className="status-indicator">
+                            <div className="status-dot"></div>
+                            {isConnected ? 'SYSTEM ONLINE' : 'CONNECTING...'}
+                        </div>
+                    </div>
+
+                    <div className="grid">
+                        <div className="stat-card">
+                            <div className="stat-label">Total Events</div>
+                            <div className="stat-value">{stats.total_events}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Entries</div>
+                            <div className="stat-value">{stats.total_entries}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Exits</div>
+                            <div className="stat-value">{stats.total_exits}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">FPS</div>
+                            <div className="stat-value">{stats.current_fps.toFixed(1)}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Cameras Online</div>
+                            <div className="stat-value">{stats.cameras_online}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Uptime</div>
+                            <div className="stat-value" style={{fontSize: '1.5rem'}}>
+                                {formatUptime(stats.uptime_seconds)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="main-content">
+                        <div>
+                            <div className="video-section">
+                                <h2 className="section-title">
+                                    <span className="title-icon"></span>
+                                    Live Camera Feed
+                                </h2>
+                                <div className="video-container">
+                                    <div className="video-placeholder">
+                                        <div className="video-placeholder-icon">📹</div>
+                                        <p>Camera feed will appear here</p>
+                                        <p style={{fontSize: '0.875rem', marginTop: '0.5rem'}}>
+                                            Connect camera to start streaming
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {cameras.length > 0 && (
+                                <div className="video-section" style={{marginTop: '2rem'}}>
+                                    <h2 className="section-title">
+                                        <span className="title-icon"></span>
+                                        Camera Status
+                                    </h2>
+                                    <div className="camera-grid">
+                                        {cameras.map(camera => (
+                                            <div key={camera.camera_id} className="camera-card">
+                                                <div className="camera-name">{camera.name}</div>
+                                                <div className="camera-status">
+                                                    <div className="status-dot" style={{
+                                                        background: camera.connected ? 
+                                                            'var(--accent-success)' : 
+                                                            'var(--accent-danger)'
+                                                    }}></div>
+                                                    {camera.connected ? 'ONLINE' : 'OFFLINE'}
+                                                </div>
+                                                <div className="camera-fps">
+                                                    {camera.fps.toFixed(1)} FPS
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="events-panel">
+                            <h2 className="section-title">
+                                <span className="title-icon"></span>
+                                Recent Events
+                            </h2>
+                            <div className="events-list">
+                                {events.length === 0 ? (
+                                    <div style={{textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)'}}>
+                                        <p>No events yet</p>
+                                        <p style={{fontSize: '0.875rem', marginTop: '0.5rem'}}>
+                                            Events will appear here in real-time
+                                        </p>
+                                    </div>
+                                ) : (
+                                    events.map((event, index) => (
+                                        <div key={event.id || index} className={`event-item ${event.event_type}`}>
+                                            <div className="event-header">
+                                                <span className={`event-type ${event.event_type}`}>
+                                                    {event.event_type}
+                                                </span>
+                                                <span className="event-time">
+                                                    {formatTime(event.timestamp)}
+                                                </span>
+                                            </div>
+                                            <div className="event-plate">
+                                                {event.plate_text || 'NO PLATE'}
+                                            </div>
+                                            <div className="event-details">
+                                                {event.vehicle_type || 'Unknown'} • Camera {event.camera_id}
+                                                {event.plate_confidence && 
+                                                    ` • ${(event.plate_confidence * 100).toFixed(0)}% conf`
+                                                }
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<Dashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
